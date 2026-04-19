@@ -22,12 +22,22 @@ static PluginInfo s_pluginInfo = {
 	PLUGIN_INTERFACE_VERSION
 };
 
+// Known client binaries (confirmed + presumed):
+//   StarRuptureGameSteam-Win64-Shipping.exe   (Steam client - confirmed in logs)
+//   StarRuptureGameEOS-Win64-Shipping.exe     (EOS client - presumed)
+//   StarRuptureGame-Win64-Shipping.exe        (generic client - presumed)
+// Server binary to reject (from KeepTicking plugin):
+//   StarRuptureServerEOS-Win64-Shipping.exe
+// Rule: starts with "StarRupture" and does NOT contain "Server".
 static bool IsClientBinary()
 {
 	wchar_t path[MAX_PATH] = {};
 	if (!GetModuleFileNameW(nullptr, path, MAX_PATH)) return false;
 	const wchar_t* name = wcsrchr(path, L'\\');
-	return _wcsicmp(name ? name + 1 : path, L"StarRupture-Win64-Shipping.exe") == 0;
+	name = name ? name + 1 : path;
+	if (_wcsnicmp(name, L"StarRupture", 11) != 0) return false;
+	if (wcsstr(name, L"Server") != nullptr) return false;
+	return true;
 }
 
 extern "C" {
@@ -47,7 +57,11 @@ extern "C" {
 
 		if (!IsClientBinary())
 		{
-			LOG_WARN("RecyclerHotkey: Not running on the game client. Plugin will stay loaded but inactive.");
+			char exePath[MAX_PATH] = {};
+			GetModuleFileNameA(nullptr, exePath, MAX_PATH);
+			const char* basename = strrchr(exePath, '\\');
+			basename = basename ? basename + 1 : exePath;
+			LOG_WARN("RecyclerHotkey: Host executable '%s' is not a recognized client binary. Plugin will stay loaded but inactive.", basename);
 			return true;
 		}
 
