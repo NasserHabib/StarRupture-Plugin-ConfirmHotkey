@@ -75,6 +75,12 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
     if (event != EModKeyEvent::Pressed) return;
     if (!SDK::UObject::GObjects) return;   // early-press guard: pre-engine-init keypress
 
+    // Count non-CDO instances of each target class regardless of visibility.
+    // Lets us distinguish "class never instanced" from "instanced but filtered
+    // out by visibility check" in the log output.
+    int recyclerTotal = 0;
+    int analyzerTotal = 0;
+
     const int count = SDK::UObject::GObjects->Num();
     for (int i = 0; i < count; ++i)
     {
@@ -85,10 +91,11 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
         if (Obj->IsA(SDK::UCrUW_RecyclingStatus::StaticClass()))
         {
             auto* ui = static_cast<SDK::UCrUW_RecyclingStatus*>(Obj);
-            // Not in viewport — skip to next object. Safe to `continue` here
-            // because Recycler and Analyzer are disjoint hierarchies; this
-            // object can't match the Analyzer check below.
-            if (!ui->IsInViewport()) continue;
+            ++recyclerTotal;
+            // Use IsVisible (own-visibility enum) rather than IsInViewport:
+            // nested sub-widgets inside a container never have the viewport
+            // flag set even when they're displayed on screen.
+            if (!ui->IsVisible()) continue;
 
             if (SafeInvokeRecycle(ui))
                 LOG_INFO("ModCore: Confirmed action on Recycler via hotkey '%s'", s_keyName);
@@ -101,7 +108,8 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
         if (Obj->IsA(SDK::UCrUW_Analyzer::StaticClass()))
         {
             auto* ui = static_cast<SDK::UCrUW_Analyzer*>(Obj);
-            if (!ui->IsInViewport()) continue;
+            ++analyzerTotal;
+            if (!ui->IsVisible()) continue;
 
             if (SafeInvokeClaim(ui))
                 LOG_INFO("ModCore: Confirmed action on Analyzer via hotkey '%s'", s_keyName);
@@ -111,7 +119,8 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
         }
     }
 
-    LOG_INFO("ModCore: Hotkey '%s' pressed but no targeted widget (Recycler/Analyzer) in viewport.", s_keyName);
+    LOG_INFO("ModCore: Hotkey '%s' pressed — no visible target. GObjects contains: Recycler=%d, Analyzer=%d instance(s) (none passed IsVisible).",
+             s_keyName, recyclerTotal, analyzerTotal);
 }
 
 #else
