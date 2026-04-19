@@ -16,12 +16,18 @@ char         ModCore::s_keyName[64] = {0};
 
 #if defined(MODLOADER_CLIENT_BUILD)
 
-// SEH-wrapped click invocation — HandleOnRecycleButtonClicked hits UE reflection
+// SEH-wrapped click invocations — the Handle*Clicked methods hit UE reflection
 // (ProcessEvent via Class->GetFunction), so a widget that's mid-teardown can
 // null-deref. Same defensive idiom as KeepTicking's SafeGetActorLocation.
 static bool SafeInvokeRecycle(SDK::UCrUW_RecyclingStatus* widget)
 {
     __try { widget->HandleOnRecycleButtonClicked(); return true; }
+    __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
+}
+
+static bool SafeInvokeClaim(SDK::UCrUW_Analyzer* widget)
+{
+    __try { widget->HandleClaimClicked(); return true; }
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
@@ -36,11 +42,11 @@ bool ModCore::Initialize(IPluginSelf* self)
         return false;
     }
 
-    const char* keyName = RecyclerHotkeyConfig::Config::GetRecycleHotkey();
+    const char* keyName = RecyclerHotkeyConfig::Config::GetConfirmHotkey();
     strncpy_s(s_keyName, sizeof(s_keyName), keyName, _TRUNCATE);
 
-    LOG_INFO("ModCore: Registering hotkey '%s' (Pressed)", s_keyName);
-    self->hooks->Input->RegisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnRecycleHotkey);
+    LOG_INFO("ModCore: Registering confirm hotkey '%s' (Pressed)", s_keyName);
+    self->hooks->Input->RegisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
     LOG_INFO("ModCore: Hotkey registered successfully.");
 
     return true;
@@ -51,37 +57,56 @@ void ModCore::Shutdown()
     LOG_INFO("ModCore: Shutting down RecyclerHotkey...");
     if (s_self && s_self->hooks && s_self->hooks->Input && s_keyName[0] != '\0')
     {
-        s_self->hooks->Input->UnregisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnRecycleHotkey);
+        s_self->hooks->Input->UnregisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
     }
     s_self = nullptr;
     s_keyName[0] = '\0';
 }
 
-void ModCore::OnRecycleHotkey(EModKey /*key*/, EModKeyEvent event)
+void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
 {
     if (event != EModKeyEvent::Pressed) return;
     if (!SDK::UObject::GObjects) return;   // early-press guard: pre-engine-init keypress
 
-    LOG_TRACE("ModCore: Hotkey triggered, searching for Recycler UI...");
+    LOG_TRACE("ModCore: Hotkey triggered, searching for confirmable UI...");
 
     const int count = SDK::UObject::GObjects->Num();
     for (int i = 0; i < count; ++i)
     {
         SDK::UObject* Obj = SDK::UObject::GObjects->GetByIndex(i);
         if (!Obj || Obj->IsDefaultObject()) continue;
-        if (!Obj->IsA(SDK::UCrUW_RecyclingStatus::StaticClass())) continue;
 
-        auto* RecyclerUI = static_cast<SDK::UCrUW_RecyclingStatus*>(Obj);
-        if (!RecyclerUI->IsInViewport()) continue;
+        // Target #1: Recycler's RECYCLE button.
+        if (Obj->IsA(SDK::UCrUW_RecyclingStatus::StaticClass()))
+        {
+            auto* ui = static_cast<SDK::UCrUW_RecyclingStatus*>(Obj);
+            // Not in viewport — skip to next object. Safe to `continue` here
+            // because Recycler and Analyzer are disjoint hierarchies; this
+            // object can't match the Analyzer check below.
+            if (!ui->IsInViewport()) continue;
 
-        if (SafeInvokeRecycle(RecyclerUI))
-            LOG_INFO("ModCore: Recycle confirmed via hotkey '%s'", s_keyName);
-        else
-            LOG_ERROR("ModCore: HandleOnRecycleButtonClicked crashed (widget %p)", static_cast<void*>(RecyclerUI));
-        return;
+            if (SafeInvokeRecycle(ui))
+                LOG_INFO("ModCore: Confirmed action on Recycler via hotkey '%s'", s_keyName);
+            else
+                LOG_ERROR("ModCore: HandleOnRecycleButtonClicked crashed (widget %p)", static_cast<void*>(ui));
+            return;
+        }
+
+        // Target #2: Analyzing Station's CLAIM button.
+        if (Obj->IsA(SDK::UCrUW_Analyzer::StaticClass()))
+        {
+            auto* ui = static_cast<SDK::UCrUW_Analyzer*>(Obj);
+            if (!ui->IsInViewport()) continue;
+
+            if (SafeInvokeClaim(ui))
+                LOG_INFO("ModCore: Confirmed action on Analyzer via hotkey '%s'", s_keyName);
+            else
+                LOG_ERROR("ModCore: HandleClaimClicked crashed (widget %p)", static_cast<void*>(ui));
+            return;
+        }
     }
 
-    LOG_DEBUG("ModCore: No active Recycler UI in viewport.");
+    LOG_DEBUG("ModCore: No targeted widget in viewport.");
 }
 
 #else
@@ -94,6 +119,6 @@ bool ModCore::Initialize(IPluginSelf* /*self*/)
 
 void ModCore::Shutdown() {}
 
-void ModCore::OnRecycleHotkey(EModKey /*key*/, EModKeyEvent /*event*/) {}
+void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent /*event*/) {}
 
 #endif

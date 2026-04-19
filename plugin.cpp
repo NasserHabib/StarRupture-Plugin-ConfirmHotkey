@@ -18,7 +18,7 @@ static PluginInfo s_pluginInfo = {
 	"RecyclerHotkey",
 	MODLOADER_BUILD_TAG,
 	"Nasser",
-	"Adds a hotkey to trigger the Recycle button in the Recycler UI.",
+	"Adds a hotkey that confirms the primary action in single-button interior UIs (Recycler, Analyzing Station).",
 	PLUGIN_INTERFACE_VERSION
 };
 

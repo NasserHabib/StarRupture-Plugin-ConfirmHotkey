@@ -9,7 +9,7 @@ public:
     static void Shutdown();
 
 private:
-    static void OnRecycleHotkey(EModKey key, EModKeyEvent event);
+    static void OnConfirmHotkey(EModKey key, EModKeyEvent event);
 
     static IPluginSelf* s_self;
     static char         s_keyName[64];

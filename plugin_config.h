@@ -15,10 +15,10 @@ namespace RecyclerHotkeyConfig
 		},
 		{
 			"PluginSettings",
-			"RecycleHotkey",
+			"ConfirmHotkey",
 			ConfigValueType::String,
 			"R",
-			"The hotkey used to trigger the Recycle button (e.g., R, F, etc.)"
+			"The hotkey used to confirm the primary action in single-button interior UIs (Recycler, Analyzing Station). E.g., R, F, etc."
 		}
 	};
 
@@ -47,10 +47,10 @@ namespace RecyclerHotkeyConfig
 			return s_self ? s_self->config->ReadBool(s_self, "General", "Enabled", true) : true;
 		}
 
-		static const char* GetRecycleHotkey()
+		static const char* GetConfirmHotkey()
 		{
 			static char buffer[64];
-			if (s_self && s_self->config->ReadString(s_self, "PluginSettings", "RecycleHotkey", buffer, sizeof(buffer), "R"))
+			if (s_self && s_self->config->ReadString(s_self, "PluginSettings", "ConfirmHotkey", buffer, sizeof(buffer), "R"))
 			{
 				return buffer;
 			}
