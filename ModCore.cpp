@@ -26,20 +26,20 @@ static bool SafeInvokeRecycle(SDK::UCrUW_RecyclingStatus* widget)
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
-// The Analyzer's ClaimButton is a UCrUW_ActionButton wrapper — its native
-// ButtonClicked() UFunction is the same entry point Slate hits on a real
-// click, so calling it gives us the sound (via DA_SoundsTable) plus the
-// downstream broadcast that ends up invoking HandleClaimClicked on the
-// parent. Fall back to HandleClaimClicked directly if the button pointer is
-// somehow null (widget partially constructed, etc.).
+// The Analyzer's ClaimButton is a UCrUW_ActionButton wrapper. In practice its
+// ButtonClicked() UFunction handles the presentation layer (sound via
+// DA_SoundsTable, any press animation) but does NOT fan out to
+// HandleClaimClicked on the parent widget — that wiring goes through a
+// separate OnClicked path in the BP. So we call both: ButtonClicked for the
+// feedback, then HandleClaimClicked for the gameplay effect. Order matters
+// for perceived responsiveness (sound starts before the RPC round-trip).
 static bool SafeInvokeClaim(SDK::UCrUW_Analyzer* widget)
 {
     __try
     {
         if (widget->ClaimButton)
-            widget->ClaimButton->ButtonClicked();
-        else
-            widget->HandleClaimClicked();
+            widget->ClaimButton->ButtonClicked();   // sound + animation
+        widget->HandleClaimClicked();                // gameplay effect (server RPC)
         return true;
     }
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
@@ -193,9 +193,9 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
             ++analyzerTotal;
             if (!ui->IsVisible()) continue;
 
-            // ButtonClicked() on the wrapper plays the sound via its own
-            // DA_SoundsTable AND fires HandleClaimClicked — no extra sound
-            // playback needed here.
+            // SafeInvokeClaim calls ClaimButton->ButtonClicked() for the
+            // sound+animation AND HandleClaimClicked() for the gameplay
+            // effect — both are needed, they live on separate BP paths.
             if (SafeInvokeClaim(ui))
                 LOG_INFO("ModCore: Confirmed action on Analyzer via hotkey '%s'", s_keyName);
             else
