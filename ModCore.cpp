@@ -26,10 +26,51 @@ static bool SafeInvokeRecycle(SDK::UCrUW_RecyclingStatus* widget)
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
+// The Analyzer's ClaimButton is a UCrUW_ActionButton wrapper — its native
+// ButtonClicked() UFunction is the same entry point Slate hits on a real
+// click, so calling it gives us the sound (via DA_SoundsTable) plus the
+// downstream broadcast that ends up invoking HandleClaimClicked on the
+// parent. Fall back to HandleClaimClicked directly if the button pointer is
+// somehow null (widget partially constructed, etc.).
 static bool SafeInvokeClaim(SDK::UCrUW_Analyzer* widget)
 {
-    __try { widget->HandleClaimClicked(); return true; }
+    __try
+    {
+        if (widget->ClaimButton)
+            widget->ClaimButton->ButtonClicked();
+        else
+            widget->HandleClaimClicked();
+        return true;
+    }
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
+}
+
+// The Recycler's RecycleButton is a raw UButton — its click sound lives in
+// WidgetStyle and is played by Slate on real input events, not by any
+// OnClicked listener. Since we bypass Slate, manually play it via
+// UGameplayStatics::PlaySound2D. Prefer ClickedSlateSound, fall back to
+// PressedSlateSound. Silent no-op if neither is configured or the asset is
+// missing — users still get the gameplay effect from HandleOn...Clicked.
+static void SafePlayButtonClickSound(SDK::UButton* button)
+{
+    __try
+    {
+        if (!button) return;
+        SDK::UObject* resource = button->WidgetStyle.ClickedSlateSound.ResourceObject;
+        if (!resource) resource = button->WidgetStyle.PressedSlateSound.ResourceObject;
+        if (!resource) return;
+
+        SDK::UGameplayStatics::PlaySound2D(
+            button,                                      // WorldContextObject
+            static_cast<SDK::USoundBase*>(resource),     // Sound
+            1.0f,                                        // VolumeMultiplier
+            1.0f,                                        // PitchMultiplier
+            0.0f,                                        // StartTime
+            nullptr,                                     // ConcurrencySettings
+            nullptr,                                     // OwningActor
+            true);                                       // bIsUISound
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) { /* silent; don't spam the log on every keypress */ }
 }
 
 bool ModCore::Initialize(IPluginSelf* self)
@@ -136,7 +177,10 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
             if (!ui->IsVisible()) continue;
 
             if (SafeInvokeRecycle(ui))
+            {
                 LOG_INFO("ModCore: Confirmed action on Recycler via hotkey '%s'", s_keyName);
+                SafePlayButtonClickSound(ui->RecycleButton);
+            }
             else
                 LOG_ERROR("ModCore: HandleOnRecycleButtonClicked crashed (widget %p)", static_cast<void*>(ui));
             return;
@@ -149,10 +193,13 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
             ++analyzerTotal;
             if (!ui->IsVisible()) continue;
 
+            // ButtonClicked() on the wrapper plays the sound via its own
+            // DA_SoundsTable AND fires HandleClaimClicked — no extra sound
+            // playback needed here.
             if (SafeInvokeClaim(ui))
                 LOG_INFO("ModCore: Confirmed action on Analyzer via hotkey '%s'", s_keyName);
             else
-                LOG_ERROR("ModCore: HandleClaimClicked crashed (widget %p)", static_cast<void*>(ui));
+                LOG_ERROR("ModCore: ClaimButton click crashed (widget %p)", static_cast<void*>(ui));
             return;
         }
     }
