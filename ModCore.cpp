@@ -56,18 +56,56 @@ bool ModCore::Initialize(IPluginSelf* self)
     self->hooks->Input->RegisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
     LOG_INFO("ModCore: Hotkey registered successfully.");
 
+    // Subscribe to config-change notifications so the hotkey can be rebound
+    // from the in-game config menu (or a manual INI edit the loader detects)
+    // without requiring a plugin reload.
+    if (self->hooks->UI)
+    {
+        self->hooks->UI->RegisterOnConfigChanged(&OnConfigChanged);
+        LOG_INFO("ModCore: Config-change callback registered (hotkey hot-reload enabled).");
+    }
+
     return true;
 }
 
 void ModCore::Shutdown()
 {
     LOG_INFO("ModCore: Shutting down RecyclerHotkey...");
-    if (s_self && s_self->hooks && s_self->hooks->Input && s_keyName[0] != '\0')
+    if (s_self && s_self->hooks)
     {
-        s_self->hooks->Input->UnregisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
+        if (s_self->hooks->Input && s_keyName[0] != '\0')
+            s_self->hooks->Input->UnregisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
+        if (s_self->hooks->UI)
+            s_self->hooks->UI->UnregisterOnConfigChanged(&OnConfigChanged);
     }
     s_self = nullptr;
     s_keyName[0] = '\0';
+}
+
+// Fires for any config change across the whole modloader (other plugins' too).
+// Filter to our specific section+key before doing any work.
+void ModCore::OnConfigChanged(const char* section, const char* key, const char* newValue)
+{
+    if (!section || !key) return;
+    if (std::strcmp(section, "PluginSettings") != 0) return;
+    if (std::strcmp(key, "ConfirmHotkey") != 0) return;
+    if (!s_self || !s_self->hooks || !s_self->hooks->Input) return;
+
+    char newKey[64] = {};
+    strncpy_s(newKey, sizeof(newKey), (newValue && *newValue) ? newValue : "R", _TRUNCATE);
+    for (char* p = newKey; *p; ++p)
+        *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
+
+    if (std::strcmp(newKey, s_keyName) == 0)
+        return;  // Same key after normalization — nothing to do.
+
+    LOG_INFO("ModCore: Hotkey config changed from '%s' to '%s' — re-registering.", s_keyName, newKey);
+    if (s_keyName[0] != '\0')
+        s_self->hooks->Input->UnregisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
+
+    std::memcpy(s_keyName, newKey, sizeof(s_keyName));
+    s_self->hooks->Input->RegisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
+    LOG_INFO("ModCore: Re-registered confirm hotkey as '%s'.", s_keyName);
 }
 
 void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
@@ -134,5 +172,7 @@ bool ModCore::Initialize(IPluginSelf* /*self*/)
 void ModCore::Shutdown() {}
 
 void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent /*event*/) {}
+
+void ModCore::OnConfigChanged(const char* /*section*/, const char* /*key*/, const char* /*newValue*/) {}
 
 #endif
