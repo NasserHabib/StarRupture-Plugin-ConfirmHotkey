@@ -2,6 +2,7 @@
 #include "plugin_helpers.h"
 #include "plugin_config.h"
 
+#include <cctype>
 #include <cstring>
 
 #if defined(MODLOADER_CLIENT_BUILD)
@@ -45,6 +46,12 @@ bool ModCore::Initialize(IPluginSelf* self)
     const char* keyName = RecyclerHotkeyConfig::Config::GetConfirmHotkey();
     strncpy_s(s_keyName, sizeof(s_keyName), keyName, _TRUNCATE);
 
+    // Loader's keybind registry is case-sensitive and the EModKey enum uses
+    // uppercase names (A-Z, F1-F12, SPACE, etc.). Normalize so users can
+    // write the key in any case in the INI without silent registration failure.
+    for (char* p = s_keyName; *p; ++p)
+        *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
+
     LOG_INFO("ModCore: Registering confirm hotkey '%s' (Pressed)", s_keyName);
     self->hooks->Input->RegisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
     LOG_INFO("ModCore: Hotkey registered successfully.");
@@ -67,8 +74,6 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
 {
     if (event != EModKeyEvent::Pressed) return;
     if (!SDK::UObject::GObjects) return;   // early-press guard: pre-engine-init keypress
-
-    LOG_TRACE("ModCore: Hotkey triggered, searching for confirmable UI...");
 
     const int count = SDK::UObject::GObjects->Num();
     for (int i = 0; i < count; ++i)
@@ -106,7 +111,7 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
         }
     }
 
-    LOG_DEBUG("ModCore: No targeted widget in viewport.");
+    LOG_INFO("ModCore: Hotkey '%s' pressed but no targeted widget (Recycler/Analyzer) in viewport.", s_keyName);
 }
 
 #else
