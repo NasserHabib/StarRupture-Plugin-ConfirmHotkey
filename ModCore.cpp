@@ -4,6 +4,7 @@
 
 #include <cctype>
 #include <cstring>
+#include <string>
 
 #if defined(MODLOADER_CLIENT_BUILD)
 #include "Engine_classes.hpp"
@@ -17,22 +18,23 @@ char         ModCore::s_keyName[64] = {0};
 
 #if defined(MODLOADER_CLIENT_BUILD)
 
-// SEH-wrapped click invocations — the Handle*Clicked methods hit UE reflection
-// (ProcessEvent via Class->GetFunction), so a widget that's mid-teardown can
-// null-deref. Same defensive idiom as KeepTicking's SafeGetActorLocation.
-static bool SafeInvokeRecycle(SDK::UCrUW_RecyclingStatus* widget)
-{
-    __try { widget->HandleOnRecycleButtonClicked(); return true; }
-    __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
-}
-
-// The Analyzer's ClaimButton is a UCrUW_ActionButton wrapper. In practice its
-// ButtonClicked() UFunction handles the presentation layer (sound via
-// DA_SoundsTable, any press animation) but does NOT fan out to
+// StarRupture uses UCrUW_Analyzer as a generic "confirm primary action" base
+// for multiple single-button interior UIs. Each building's UI is a Blueprint
+// subclass (WBP_Recycler_C, WBP_Analyzer_C, …) that inherits from it and
+// wires ClaimButton + HandleClaimClicked to its own action. Live diagnostic
+// confirmed the SDK's UCrUW_RecyclingStatus class is not instantiated in
+// practice, so we don't match on it — the Analyzer IsA check catches
+// everything we care about.
+//
+// The wrapper's ButtonClicked() UFunction handles the presentation layer
+// (sound via DA_SoundsTable, any press animation) but does NOT fan out to
 // HandleClaimClicked on the parent widget — that wiring goes through a
 // separate OnClicked path in the BP. So we call both: ButtonClicked for the
 // feedback, then HandleClaimClicked for the gameplay effect. Order matters
 // for perceived responsiveness (sound starts before the RPC round-trip).
+// SEH-wrapped because the Handle* methods hit UE reflection (ProcessEvent
+// via Class->GetFunction), so a widget that's mid-teardown can null-deref —
+// same defensive idiom as KeepTicking's SafeGetActorLocation.
 static bool SafeInvokeClaim(SDK::UCrUW_Analyzer* widget)
 {
     __try
@@ -43,34 +45,6 @@ static bool SafeInvokeClaim(SDK::UCrUW_Analyzer* widget)
         return true;
     }
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
-}
-
-// The Recycler's RecycleButton is a raw UButton — its click sound lives in
-// WidgetStyle and is played by Slate on real input events, not by any
-// OnClicked listener. Since we bypass Slate, manually play it via
-// UGameplayStatics::PlaySound2D. Prefer ClickedSlateSound, fall back to
-// PressedSlateSound. Silent no-op if neither is configured or the asset is
-// missing — users still get the gameplay effect from HandleOn...Clicked.
-static void SafePlayButtonClickSound(SDK::UButton* button)
-{
-    __try
-    {
-        if (!button) return;
-        SDK::UObject* resource = button->WidgetStyle.ClickedSlateSound.ResourceObject;
-        if (!resource) resource = button->WidgetStyle.PressedSlateSound.ResourceObject;
-        if (!resource) return;
-
-        SDK::UGameplayStatics::PlaySound2D(
-            button,                                      // WorldContextObject
-            static_cast<SDK::USoundBase*>(resource),     // Sound
-            1.0f,                                        // VolumeMultiplier
-            1.0f,                                        // PitchMultiplier
-            0.0f,                                        // StartTime
-            nullptr,                                     // ConcurrencySettings
-            nullptr,                                     // OwningActor
-            true);                                       // bIsUISound
-    }
-    __except (EXCEPTION_EXECUTE_HANDLER) { /* silent; don't spam the log on every keypress */ }
 }
 
 bool ModCore::Initialize(IPluginSelf* self)
@@ -154,64 +128,43 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
     if (event != EModKeyEvent::Pressed) return;
     if (!SDK::UObject::GObjects) return;   // early-press guard: pre-engine-init keypress
 
-    // Count non-CDO instances of each target class regardless of visibility.
+    // Count non-CDO UCrUW_Analyzer-derived instances regardless of visibility.
     // Lets us distinguish "class never instanced" from "instanced but filtered
-    // out by visibility check" in the log output.
-    int recyclerTotal = 0;
-    int analyzerTotal = 0;
+    // out by visibility check" in the no-match log line.
+    int targetTotal = 0;
 
     const int count = SDK::UObject::GObjects->Num();
     for (int i = 0; i < count; ++i)
     {
         SDK::UObject* Obj = SDK::UObject::GObjects->GetByIndex(i);
         if (!Obj || Obj->IsDefaultObject()) continue;
+        if (!Obj->IsA(SDK::UCrUW_Analyzer::StaticClass())) continue;
 
-        // Target #1: Recycler's RECYCLE button.
-        if (Obj->IsA(SDK::UCrUW_RecyclingStatus::StaticClass()))
-        {
-            auto* ui = static_cast<SDK::UCrUW_RecyclingStatus*>(Obj);
-            ++recyclerTotal;
-            LOG_DEBUG("ModCore: [diag] Recycler IsA matched — actual class='%s' object='%s'",
-                      ui->Class ? ui->Class->GetName().c_str() : "null",
-                      ui->GetFullName().c_str());
-            // Use IsVisible (own-visibility enum) rather than IsInViewport:
-            // nested sub-widgets inside a container never have the viewport
-            // flag set even when they're displayed on screen.
-            if (!ui->IsVisible()) continue;
+        auto* ui = static_cast<SDK::UCrUW_Analyzer*>(Obj);
+        ++targetTotal;
 
-            if (SafeInvokeRecycle(ui))
-            {
-                LOG_INFO("ModCore: Confirmed action on Recycler via hotkey '%s'", s_keyName);
-                SafePlayButtonClickSound(ui->RecycleButton);
-            }
-            else
-                LOG_ERROR("ModCore: HandleOnRecycleButtonClicked crashed (widget %p)", static_cast<void*>(ui));
-            return;
-        }
+        // Capture the actual BP class name (e.g. "WBP_Recycler_C",
+        // "WBP_Analyzer_C") so the success log identifies which building fired.
+        std::string className = ui->Class ? ui->Class->GetName() : std::string("UCrUW_Analyzer");
+        LOG_DEBUG("ModCore: [diag] IsA match — class='%s' object='%s'",
+                  className.c_str(), ui->GetFullName().c_str());
 
-        // Target #2: Analyzing Station's CLAIM button.
-        if (Obj->IsA(SDK::UCrUW_Analyzer::StaticClass()))
-        {
-            auto* ui = static_cast<SDK::UCrUW_Analyzer*>(Obj);
-            ++analyzerTotal;
-            LOG_DEBUG("ModCore: [diag] Analyzer IsA matched — actual class='%s' object='%s'",
-                      ui->Class ? ui->Class->GetName().c_str() : "null",
-                      ui->GetFullName().c_str());
-            if (!ui->IsVisible()) continue;
+        // Use IsVisible (own-visibility enum) rather than IsInViewport: nested
+        // sub-widgets inside a container never have the viewport flag set even
+        // when they're displayed on screen.
+        if (!ui->IsVisible()) continue;
 
-            // SafeInvokeClaim calls ClaimButton->ButtonClicked() for the
-            // sound+animation AND HandleClaimClicked() for the gameplay
-            // effect — both are needed, they live on separate BP paths.
-            if (SafeInvokeClaim(ui))
-                LOG_INFO("ModCore: Confirmed action on Analyzer via hotkey '%s'", s_keyName);
-            else
-                LOG_ERROR("ModCore: ClaimButton click crashed (widget %p)", static_cast<void*>(ui));
-            return;
-        }
+        if (SafeInvokeClaim(ui))
+            LOG_INFO("ModCore: Confirmed action on %s via hotkey '%s'",
+                     className.c_str(), s_keyName);
+        else
+            LOG_ERROR("ModCore: ClaimButton click crashed on %s (widget %p)",
+                      className.c_str(), static_cast<void*>(ui));
+        return;
     }
 
-    LOG_INFO("ModCore: Hotkey '%s' pressed — no visible target. GObjects contains: Recycler=%d, Analyzer=%d instance(s) (none passed IsVisible).",
-             s_keyName, recyclerTotal, analyzerTotal);
+    LOG_INFO("ModCore: Hotkey '%s' pressed — no visible target. GObjects contains %d UCrUW_Analyzer-derived instance(s) (none passed IsVisible).",
+             s_keyName, targetTotal);
 }
 
 #else
