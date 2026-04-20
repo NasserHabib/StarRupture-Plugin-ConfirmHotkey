@@ -107,7 +107,7 @@ void ModCore::OnConfigChanged(const char* section, const char* key, const char* 
     if (!s_self || !s_self->hooks || !s_self->hooks->Input) return;
 
     char newKey[64] = {};
-    strncpy_s(newKey, sizeof(newKey), (newValue && *newValue) ? newValue : "R", _TRUNCATE);
+    strncpy_s(newKey, sizeof(newKey), (newValue && *newValue) ? newValue : "E", _TRUNCATE);
     for (char* p = newKey; *p; ++p)
         *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
 

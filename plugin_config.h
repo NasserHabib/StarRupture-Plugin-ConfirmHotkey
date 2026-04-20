@@ -17,7 +17,7 @@ namespace RecyclerHotkeyConfig
 			"PluginSettings",
 			"ConfirmHotkey",
 			ConfigValueType::String,
-			"R",
+			"E",
 			"The hotkey used to confirm the primary action in single-button interior UIs (Recycler, Analyzing Station). E.g., R, F, etc."
 		}
 	};
@@ -50,11 +50,11 @@ namespace RecyclerHotkeyConfig
 		static const char* GetConfirmHotkey()
 		{
 			static char buffer[64];
-			if (s_self && s_self->config->ReadString(s_self, "PluginSettings", "ConfirmHotkey", buffer, sizeof(buffer), "R"))
+			if (s_self && s_self->config->ReadString(s_self, "PluginSettings", "ConfirmHotkey", buffer, sizeof(buffer), "E"))
 			{
 				return buffer;
 			}
-			return "R";
+			return "E";
 		}
 
 	private:

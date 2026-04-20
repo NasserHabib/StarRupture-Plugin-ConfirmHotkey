@@ -11,13 +11,13 @@ IPluginSelf* GetSelf() { return g_self; }
 
 // Plugin metadata
 #ifndef MODLOADER_BUILD_TAG
-#define MODLOADER_BUILD_TAG "dev"
+#define MODLOADER_BUILD_TAG "v0.1.0"
 #endif
 
 static PluginInfo s_pluginInfo = {
 	"RecyclerHotkey",
 	MODLOADER_BUILD_TAG,
-	"Nasser",
+	"S4cobra",
 	"Adds a hotkey that confirms the primary action in single-button interior UIs (Recycler, Analyzing Station).",
 	PLUGIN_INTERFACE_VERSION
 };
