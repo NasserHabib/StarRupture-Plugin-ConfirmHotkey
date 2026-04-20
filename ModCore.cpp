@@ -171,6 +171,9 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
         {
             auto* ui = static_cast<SDK::UCrUW_RecyclingStatus*>(Obj);
             ++recyclerTotal;
+            LOG_DEBUG("ModCore: [diag] Recycler IsA matched — actual class='%s' object='%s'",
+                      ui->Class ? ui->Class->GetName().c_str() : "null",
+                      ui->GetFullName().c_str());
             // Use IsVisible (own-visibility enum) rather than IsInViewport:
             // nested sub-widgets inside a container never have the viewport
             // flag set even when they're displayed on screen.
@@ -191,6 +194,9 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
         {
             auto* ui = static_cast<SDK::UCrUW_Analyzer*>(Obj);
             ++analyzerTotal;
+            LOG_DEBUG("ModCore: [diag] Analyzer IsA matched — actual class='%s' object='%s'",
+                      ui->Class ? ui->Class->GetName().c_str() : "null",
+                      ui->GetFullName().c_str());
             if (!ui->IsVisible()) continue;
 
             // SafeInvokeClaim calls ClaimButton->ButtonClicked() for the
