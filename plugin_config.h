@@ -2,7 +2,7 @@
 
 #include "plugin_interface.h"
 
-namespace RecyclerHotkeyConfig
+namespace ConfirmHotkeyConfig
 {
 	// Define config schema
 	static const ConfigEntry CONFIG_ENTRIES[] = {
@@ -11,7 +11,7 @@ namespace RecyclerHotkeyConfig
 			"Enabled",
 			ConfigValueType::Boolean,
 			"true",
-			"Enable or disable the Recycler Hotkey plugin"
+			"Enable or disable the ConfirmHotkey plugin"
 		},
 		{
 			"PluginSettings",

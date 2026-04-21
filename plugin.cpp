@@ -15,7 +15,7 @@ IPluginSelf* GetSelf() { return g_self; }
 #endif
 
 static PluginInfo s_pluginInfo = {
-	"RecyclerHotkey",
+	"ConfirmHotkey",
 	MODLOADER_BUILD_TAG,
 	"S4cobra",
 	"Adds a hotkey that confirms the primary action in single-button interior UIs (Recycler, Analyzing Station).",
@@ -44,9 +44,9 @@ extern "C" {
 	{
 		g_self = self;
 
-		LOG_INFO("RecyclerHotkey: Plugin initializing...");
+		LOG_INFO("ConfirmHotkey: Plugin initializing...");
 
-		RecyclerHotkeyConfig::Config::Initialize(self);
+		ConfirmHotkeyConfig::Config::Initialize(self);
 
 		if (!IsClientBinary())
 		{
@@ -54,30 +54,30 @@ extern "C" {
 			GetModuleFileNameA(nullptr, exePath, MAX_PATH);
 			const char* basename = strrchr(exePath, '\\');
 			basename = basename ? basename + 1 : exePath;
-			LOG_WARN("RecyclerHotkey: Host executable '%s' is not a recognized client binary. Plugin will stay loaded but inactive.", basename);
+			LOG_WARN("ConfirmHotkey: Host executable '%s' is not a recognized client binary. Plugin will stay loaded but inactive.", basename);
 			return true;
 		}
 
-		if (!RecyclerHotkeyConfig::Config::IsEnabled())
+		if (!ConfirmHotkeyConfig::Config::IsEnabled())
 		{
-			LOG_WARN("RecyclerHotkey: Plugin is disabled in config.");
+			LOG_WARN("ConfirmHotkey: Plugin is disabled in config.");
 			return true;
 		}
 
 		if (!ModCore::Initialize(self))
 		{
-			LOG_ERROR("RecyclerHotkey: ModCore failed to initialize.");
+			LOG_ERROR("ConfirmHotkey: ModCore failed to initialize.");
 			return false;
 		}
 
-		LOG_INFO("RecyclerHotkey: Plugin initialized successfully.");
+		LOG_INFO("ConfirmHotkey: Plugin initialized successfully.");
 
 		return true;
 	}
 
 	__declspec(dllexport) void PluginShutdown()
 	{
-		LOG_INFO("RecyclerHotkey: Plugin shutting down...");
+		LOG_INFO("ConfirmHotkey: Plugin shutting down...");
 
 		ModCore::Shutdown();
 

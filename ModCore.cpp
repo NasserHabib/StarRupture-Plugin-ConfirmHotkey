@@ -66,7 +66,7 @@ static bool SafeCanClaim(SDK::UCrUW_Analyzer* widget)
 
 bool ModCore::Initialize(IPluginSelf* self)
 {
-    LOG_INFO("ModCore: Initializing RecyclerHotkey...");
+    LOG_INFO("ModCore: Initializing ConfirmHotkey...");
     s_self = self;
 
     if (!self->hooks->Input)
@@ -75,7 +75,7 @@ bool ModCore::Initialize(IPluginSelf* self)
         return false;
     }
 
-    const char* keyName = RecyclerHotkeyConfig::Config::GetConfirmHotkey();
+    const char* keyName = ConfirmHotkeyConfig::Config::GetConfirmHotkey();
     strncpy_s(s_keyName, sizeof(s_keyName), keyName, _TRUNCATE);
 
     // Loader's keybind registry is case-sensitive and the EModKey enum uses
@@ -102,7 +102,7 @@ bool ModCore::Initialize(IPluginSelf* self)
 
 void ModCore::Shutdown()
 {
-    LOG_INFO("ModCore: Shutting down RecyclerHotkey...");
+    LOG_INFO("ModCore: Shutting down ConfirmHotkey...");
     if (s_self && s_self->hooks)
     {
         if (s_self->hooks->Input && s_keyName[0] != '\0')
@@ -199,7 +199,7 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
 
 bool ModCore::Initialize(IPluginSelf* /*self*/)
 {
-    LOG_WARN("ModCore: RecyclerHotkey is a client-side plugin and will not run on this build.");
+    LOG_WARN("ModCore: ConfirmHotkey is a client-side plugin and will not run on this build.");
     return true;
 }
 

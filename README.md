@@ -1,4 +1,6 @@
-# RecyclerHotkey — StarRupture Client Plugin
+# ConfirmHotkey — StarRupture Client Plugin
+
+> *Previously named `RecyclerHotkey`. Renamed because it's not Recycler-specific — it binds the primary confirm button in every single-button interior UI.*
 
 Maps a configurable hotkey (default `E`) to the primary confirm button in single-button interior UIs, so you don't have to mouse-click them after staging items.
 
@@ -11,7 +13,7 @@ Maps a configurable hotkey (default `E`) to the primary confirm button in single
 
 Both widgets inherit from the game's generic confirm-action base class `SDK::UCrUW_Analyzer`. The plugin scans `UObject::GObjects` on each keypress, finds the first visible `UCrUW_Analyzer`-derived widget, and invokes its `ClaimButton->ButtonClicked()` (for the UI presentation — sound, animation) plus `HandleClaimClicked()` (for the gameplay effect). **Any future single-button interior UI the game ships that also inherits from `UCrUW_Analyzer` should work automatically, no plugin update required.**
 
-**Scope rule — single-button UIs only.** The plugin deliberately avoids binding a hotkey inside any UI with multiple action buttons, because a shared hotkey in that context is unpredictable (the user can't know which button will fire). The Recycler's Blueprint-added **FULL RECYCLE** button is *not* bound — see `RecyclerHotkeyMultiTargetPlan.md` footnote for rationale.
+**Scope rule — single-button UIs only.** The plugin deliberately avoids binding a hotkey inside any UI with multiple action buttons, because a shared hotkey in that context is unpredictable (the user can't know which button will fire). The Recycler's Blueprint-added **FULL RECYCLE** button is *not* bound — see `ConfirmHotkeyMultiTargetPlan.md` footnote for rationale.
 
 **Target:** Client only. The plugin stays loaded but inactive on the dedicated server binary.
 
@@ -20,13 +22,13 @@ Both widgets inherit from the game's generic confirm-action base class `SDK::UCr
 ## Installation
 
 1. Build `Client Release|x64` (see below) or grab the built DLL.
-2. Copy `RecyclerHotkey.dll` to `<game_dir>\Binaries\Win64\Plugins\` next to `dwmapi.dll`.
-3. Launch the game once — `Plugins\config\RecyclerHotkey.ini` is generated with defaults.
+2. Copy `ConfirmHotkey.dll` to `<game_dir>\Binaries\Win64\Plugins\` next to `dwmapi.dll`.
+3. Launch the game once — `Plugins\config\ConfirmHotkey.ini` is generated with defaults.
 4. Edit the INI if you want a different key.
 
 > **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** (the `dwmapi.dll` proxy loader) to be installed first.
 
-## Config (`Plugins\config\RecyclerHotkey.ini`)
+## Config (`Plugins\config\ConfirmHotkey.ini`)
 
 ```ini
 [General]
@@ -62,7 +64,7 @@ No low-level hooks, no pattern scanning — pure typed-hook consumer. See the `c
 2. Verify the class declaration is reachable from an `#include` already in `ModCore.cpp` (or add the relevant header + `_functions.cpp`).
 3. Add a parallel `SafeInvokeX` helper — mirror `SafeInvokeClaim`'s shape: `ButtonClicked()` on the wrapper (if any) plus the direct handler call, both inside a single `__try`/`__except`.
 4. Add a second `if (Obj->IsA(SDK::U<NewBase>::StaticClass())) { ... }` block inside the GObjects scan loop.
-5. If target count reaches ~4 distinct base classes, refactor the scan loop into a `HotkeyTarget[]` table — see `RecyclerHotkeyMultiTargetPlan.md` for the pattern.
+5. If target count reaches ~4 distinct base classes, refactor the scan loop into a `HotkeyTarget[]` table — see `ConfirmHotkeyMultiTargetPlan.md` for the pattern.
 
 ## Building from source
 
@@ -71,9 +73,9 @@ Requires Visual Studio 2022 with the v143 toolset and the [StarRupture-Plugin-SD
 This project's `.vcxproj` must live inside a solution that imports the SDK's `Shared.props` — typically you add it to `StarRupture-Plugin-SDK.sln`:
 
 1. Open `StarRupture-Plugin-SDK.sln`.
-2. Right-click the solution → Add → Existing Project → select `RecyclerHotkey\RecyclerHotkey.vcxproj`.
+2. Right-click the solution → Add → Existing Project → select `ConfirmHotkey\ConfirmHotkey.vcxproj`.
 3. Build the `Client Release|x64` configuration.
-4. Output: `bin\x64\Client Release\plugins\RecyclerHotkey.dll`.
+4. Output: `bin\x64\Client Release\plugins\ConfirmHotkey.dll`.
 
 The `Debug`/`Release` (generic) and `Server Debug`/`Server Release` configurations exist so the solution stays buildable in those modes, but this plugin does nothing useful outside `Client *`.
 
@@ -81,7 +83,7 @@ The `Debug`/`Release` (generic) and `Server Debug`/`Server Release` configuratio
 
 - `plugin.{h,cpp}` — the three ABI exports + `IPluginSelf` lifecycle + client-binary guard.
 - `ModCore.{h,cpp}` — hotkey registration, GObjects scan, per-target invocation.
-- `plugin_config.h` — INI schema + typed accessors (`RecyclerHotkeyConfig::Config`).
+- `plugin_config.h` — INI schema + typed accessors (`ConfirmHotkeyConfig::Config`).
 - `plugin_helpers.h` — `LOG_*` macros and `GetHooks/GetConfig/GetScanner` wrappers.
 - `dllmain.cpp` — stock Windows DLL entry.
 
