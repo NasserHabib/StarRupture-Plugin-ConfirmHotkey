@@ -47,6 +47,23 @@ static bool SafeInvokeClaim(SDK::UCrUW_Analyzer* widget)
     __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
 }
 
+// Mirrors the visible gray-out of the RECYCLE/CLAIM button: returns false
+// when the BP has disabled the ActionButton wrapper's underlying UButton.
+// The usual cause is "no staged item", but this also naturally covers any
+// other disabled-state the game may add (cooldowns, full output inventory).
+// Reading GetIsEnabled hits ProcessEvent, so SEH-wrap on the same grounds
+// as SafeInvokeClaim.
+static bool SafeCanClaim(SDK::UCrUW_Analyzer* widget)
+{
+    __try
+    {
+        if (!widget->ClaimButton) return false;
+        if (!widget->ClaimButton->OverlayButton) return false;
+        return widget->ClaimButton->OverlayButton->GetIsEnabled();
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER) { return false; }
+}
+
 bool ModCore::Initialize(IPluginSelf* self)
 {
     LOG_INFO("ModCore: Initializing RecyclerHotkey...");
@@ -153,6 +170,17 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
         // sub-widgets inside a container never have the viewport flag set even
         // when they're displayed on screen.
         if (!ui->IsVisible()) continue;
+
+        // Respect the UI's own disabled-state rather than reimplementing
+        // "is anything staged?" — by reading the exact bit that drives the
+        // visible gray-out, we stay correct across every reason the game
+        // might disable the button, known or future.
+        if (!SafeCanClaim(ui))
+        {
+            LOG_INFO("ModCore: Hotkey '%s' pressed on %s but ClaimButton is disabled — nothing to claim.",
+                     s_keyName, className.c_str());
+            return;
+        }
 
         if (SafeInvokeClaim(ui))
             LOG_INFO("ModCore: Confirmed action on %s via hotkey '%s'",
