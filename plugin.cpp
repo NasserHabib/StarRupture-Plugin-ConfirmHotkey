@@ -22,13 +22,6 @@ static PluginInfo s_pluginInfo = {
 	PLUGIN_INTERFACE_VERSION
 };
 
-// Known client binaries (confirmed + presumed):
-//   StarRuptureGameSteam-Win64-Shipping.exe   (Steam client - confirmed in logs)
-//   StarRuptureGameEOS-Win64-Shipping.exe     (EOS client - presumed)
-//   StarRuptureGame-Win64-Shipping.exe        (generic client - presumed)
-// Server binary to reject (from KeepTicking plugin):
-//   StarRuptureServerEOS-Win64-Shipping.exe
-// Rule: starts with "StarRupture" and does NOT contain "Server".
 static bool IsClientBinary()
 {
 	wchar_t path[MAX_PATH] = {};

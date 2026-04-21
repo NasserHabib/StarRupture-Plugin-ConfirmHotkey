@@ -1,6 +1,6 @@
 # RecyclerHotkey — StarRupture Client Plugin
 
-Maps a configurable hotkey (default `R`) to the primary confirm button in single-button interior UIs, so you don't have to mouse-click them after staging items.
+Maps a configurable hotkey (default `E`) to the primary confirm button in single-button interior UIs, so you don't have to mouse-click them after staging items.
 
 **Currently verified:**
 
@@ -33,7 +33,7 @@ Both widgets inherit from the game's generic confirm-action base class `SDK::UCr
 Enabled=true
 
 [PluginSettings]
-ConfirmHotkey=R
+ConfirmHotkey=E
 ```
 
 Hotkey names resolve through the ModLoader's `IPluginInputEvents::RegisterKeybindByName` — any key string the loader recognizes (`R`, `F`, function keys, etc.) should work.

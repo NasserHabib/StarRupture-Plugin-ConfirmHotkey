@@ -18,7 +18,7 @@ namespace RecyclerHotkeyConfig
 			"ConfirmHotkey",
 			ConfigValueType::String,
 			"E",
-			"The hotkey used to confirm the primary action in single-button interior UIs (Recycler, Analyzing Station). E.g., R, F, etc."
+			"The hotkey used to confirm the primary action in single-button interior UIs (Recycler, Analyzing Station). E.g., E, F, etc."
 		}
 	};
 
