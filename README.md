@@ -7,8 +7,8 @@ Maps a configurable hotkey (default `E`) to the primary confirm button in single
 
 | Building | Blueprint widget | Button | Primary action |
 |---|---|---|---|
-| Recycler | `WBP_Recycler_C` | **RECYCLE** | Recycle Unwanted items |
-| Analyzing Station | `WBP_Analyzer_C` | **CLAIM** | Claim a completed analysis |
+| Recycler | `WBP_Recycler_C` | **RECYCLE** | Recycle items |
+| Analyzing Station | `WBP_Analyzer_C` | **CLAIM** | Claim analysis |
 
 Both widgets inherit from the game's generic confirm-action base class `SDK::UCrUW_Analyzer`. The plugin scans `UObject::GObjects` on each keypress, finds the first visible `UCrUW_Analyzer`-derived widget, and invokes its `ClaimButton->ButtonClicked()` (for the UI presentation — sound, animation) plus `HandleClaimClicked()` (for the gameplay effect). **Any future single-button interior UI the game ships that also inherits from `UCrUW_Analyzer` should work automatically, no plugin update required.**
 
