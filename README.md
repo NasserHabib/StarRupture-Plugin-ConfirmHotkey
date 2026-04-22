@@ -1,6 +1,5 @@
 # ConfirmHotkey — StarRupture Client Plugin
 
-> *Previously named `RecyclerHotkey`. Renamed because it's not Recycler-specific — it binds the primary confirm button in every single-button interior UI.*
 
 Maps a configurable hotkey (default `E`) to the primary confirm button in single-button interior UIs, so you don't have to mouse-click them after staging items.
 
@@ -8,12 +7,12 @@ Maps a configurable hotkey (default `E`) to the primary confirm button in single
 
 | Building | Blueprint widget | Button | Primary action |
 |---|---|---|---|
-| Recycler | `WBP_Recycler_C` | **RECYCLE** | Recycle staged items |
+| Recycler | `WBP_Recycler_C` | **RECYCLE** | Recycle Unwanted items |
 | Analyzing Station | `WBP_Analyzer_C` | **CLAIM** | Claim a completed analysis |
 
 Both widgets inherit from the game's generic confirm-action base class `SDK::UCrUW_Analyzer`. The plugin scans `UObject::GObjects` on each keypress, finds the first visible `UCrUW_Analyzer`-derived widget, and invokes its `ClaimButton->ButtonClicked()` (for the UI presentation — sound, animation) plus `HandleClaimClicked()` (for the gameplay effect). **Any future single-button interior UI the game ships that also inherits from `UCrUW_Analyzer` should work automatically, no plugin update required.**
 
-**Scope rule — single-button UIs only.** The plugin deliberately avoids binding a hotkey inside any UI with multiple action buttons, because a shared hotkey in that context is unpredictable (the user can't know which button will fire). The Recycler's Blueprint-added **FULL RECYCLE** button is *not* bound — see `ConfirmHotkeyMultiTargetPlan.md` footnote for rationale.
+**Scope rule — single-button UIs only.** The plugin deliberately avoids binding a hotkey inside any UI with multiple action buttons, because a shared hotkey in that context is unpredictable (can't know which button will fire).
 
 **Target:** Client only. The plugin stays loaded but inactive on the dedicated server binary.
 
@@ -44,15 +43,13 @@ Hotkey names resolve through the ModLoader's `IPluginInputEvents::RegisterKeybin
 
 ## How it works
 
-On `Client Release` build + `Enabled=true` + running on a `StarRupture*-Win64-Shipping.exe` binary that doesn't contain "Server":
-
 1. `PluginInit` stores `IPluginSelf*`, inits config, verifies client binary.
 2. `ModCore::Initialize` registers the configured hotkey via `Input->RegisterKeybindByName(..., EModKeyEvent::Pressed, ...)` and subscribes to `UI->RegisterOnConfigChanged(...)` so the key can be rebound from the in-game config menu without a plugin reload.
 3. On keypress, the callback walks `UObject::GObjects` in a single pass, filtering to non-CDO objects whose class `IsA SDK::UCrUW_Analyzer`. The first one whose `UWidget::IsVisible()` returns true wins — `ClaimButton->ButtonClicked()` fires for the sound and animation, then `HandleClaimClicked()` fires for the gameplay effect. Both paths are SEH-wrapped so a mid-teardown widget can't take the game down.
 4. The success log captures the widget's actual Blueprint class name (`WBP_Recycler_C`, `WBP_Analyzer_C`, …) so you can tell from the log which building fired.
 5. `PluginShutdown` unregisters the keybind and the config-change subscription, and clears `IPluginSelf`.
 
-No low-level hooks, no pattern scanning — pure typed-hook consumer. See the `claude_plugin_dev_guide.md` appendix on KeepTicking for the broader pattern.
+No low-level hooks, no pattern scanning — pure typed-hook consumer.
 
 ## Extending to new UIs
 
@@ -64,7 +61,7 @@ No low-level hooks, no pattern scanning — pure typed-hook consumer. See the `c
 2. Verify the class declaration is reachable from an `#include` already in `ModCore.cpp` (or add the relevant header + `_functions.cpp`).
 3. Add a parallel `SafeInvokeX` helper — mirror `SafeInvokeClaim`'s shape: `ButtonClicked()` on the wrapper (if any) plus the direct handler call, both inside a single `__try`/`__except`.
 4. Add a second `if (Obj->IsA(SDK::U<NewBase>::StaticClass())) { ... }` block inside the GObjects scan loop.
-5. If target count reaches ~4 distinct base classes, refactor the scan loop into a `HotkeyTarget[]` table — see `ConfirmHotkeyMultiTargetPlan.md` for the pattern.
+5. If target count reaches ~4 distinct base classes, refactor the scan loop into a `HotkeyTarget[]` table.
 
 ## Building from source
 
