@@ -1,0 +1,5 @@
+LIBRARY ConfirmHotkey
+EXPORTS
+    GetPluginInfo
+    PluginInit
+    PluginShutdown

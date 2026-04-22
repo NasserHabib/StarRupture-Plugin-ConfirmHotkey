@@ -195,18 +195,4 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
              s_keyName, targetTotal);
 }
 
-#else
-
-bool ModCore::Initialize(IPluginSelf* /*self*/)
-{
-    LOG_WARN("ModCore: ConfirmHotkey is a client-side plugin and will not run on this build.");
-    return true;
-}
-
-void ModCore::Shutdown() {}
-
-void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent /*event*/) {}
-
-void ModCore::OnConfigChanged(const char* /*section*/, const char* /*key*/, const char* /*newValue*/) {}
-
 #endif

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- ============================================================
+       Default paths for local development.
+       Override in CI via /p:GameSDKRoot=... /p:PluginSDKInclude=...
+       Local defaults point at the sibling StarRupture-Plugin-SDK
+       checkout (which vendors the Game SDK as a submodule at
+       "StarRupture SDK/"). That layout matches how this workbench
+       was set up — if your SDKs live elsewhere, pass overrides.
+       ============================================================ -->
+  <PropertyGroup>
+    <GameSDKRoot Condition="'$(GameSDKRoot)' == ''">$(MSBuildThisFileDirectory)..\StarRupture-Plugin-SDK\StarRupture SDK</GameSDKRoot>
+    <PluginSDKInclude Condition="'$(PluginSDKInclude)' == ''">$(MSBuildThisFileDirectory)..\StarRupture-Plugin-SDK\include</PluginSDKInclude>
+  </PropertyGroup>
+
+  <!-- ============================================================
+       StarRuptureSDKSourceDir
+       Points to the SDK subdirectory containing Basic.cpp,
+       CoreUObject_functions.cpp and Engine_functions.cpp.
+       Client-only plugin: single Client condition is enough.
+       ============================================================ -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Client Debug' Or '$(Configuration)' == 'Client Release'">
+    <StarRuptureSDKSourceDir>$(GameSDKRoot)\Client\SDK\</StarRuptureSDKSourceDir>
+  </PropertyGroup>
+
+  <!-- ============================================================
+       StarRuptureSDKConfigDir
+       Additional include directories for Client builds.
+       ============================================================ -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Client Debug' Or '$(Configuration)' == 'Client Release'">
+    <StarRuptureSDKConfigDir>$(GameSDKRoot)\Client\;$(GameSDKRoot)\Client\SDK\</StarRuptureSDKConfigDir>
+  </PropertyGroup>
+
+  <!-- ============================================================
+       MODLOADER_CLIENT_BUILD
+       Injected into PreprocessorDefinitions for Client builds.
+       ============================================================ -->
+  <ItemDefinitionGroup Condition="'$(Configuration)' == 'Client Debug' Or '$(Configuration)' == 'Client Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>MODLOADER_CLIENT_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <!-- ============================================================
+       MODLOADER_BUILD_TAG
+       Injected by CI via /p:ModLoaderBuildTag="vX.Y.Z". Plugins
+       embed this in PluginInfo.version so the auto-updater can
+       identify which build is installed. Dev / local builds get
+       no define -> fallback "v0.1.0" from plugin.cpp.
+       ============================================================ -->
+  <ItemDefinitionGroup Condition="'$(ModLoaderBuildTag)' != ''">
+    <ClCompile>
+      <PreprocessorDefinitions>MODLOADER_BUILD_TAG="$(ModLoaderBuildTag)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+</Project>

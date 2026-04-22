@@ -35,12 +35,12 @@ static bool IsClientBinary()
 
 extern "C" {
 
-	__declspec(dllexport) PluginInfo* GetPluginInfo()
+	PluginInfo* GetPluginInfo()
 	{
 		return &s_pluginInfo;
 	}
 
-	__declspec(dllexport) bool PluginInit(IPluginSelf* self)
+	bool PluginInit(IPluginSelf* self)
 	{
 		g_self = self;
 
@@ -75,7 +75,7 @@ extern "C" {
 		return true;
 	}
 
-	__declspec(dllexport) void PluginShutdown()
+	void PluginShutdown()
 	{
 		LOG_INFO("ConfirmHotkey: Plugin shutting down...");
 

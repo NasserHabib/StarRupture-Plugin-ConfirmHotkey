@@ -70,14 +70,17 @@ No low-level hooks, no pattern scanning — pure typed-hook consumer. See the `c
 
 Requires Visual Studio 2022 with the v143 toolset and the [StarRupture-Plugin-SDK](https://github.com/AlienXAXS/StarRupture-Plugin-SDK) (with the `StarRupture SDK` submodule initialized).
 
-This project's `.vcxproj` must live inside a solution that imports the SDK's `Shared.props` — typically you add it to `StarRupture-Plugin-SDK.sln`:
+Open `ConfirmHotkey.sln` directly and build the `Client Release|x64` configuration. The standalone solution imports a local `Shared.props` whose SDK path defaults point at a sibling `..\StarRupture-Plugin-SDK\` checkout, so if you have the two repos side-by-side the build works with no extra setup. If your SDK lives elsewhere, override the paths on the MSBuild command line:
 
-1. Open `StarRupture-Plugin-SDK.sln`.
-2. Right-click the solution → Add → Existing Project → select `ConfirmHotkey\ConfirmHotkey.vcxproj`.
-3. Build the `Client Release|x64` configuration.
-4. Output: `bin\x64\Client Release\plugins\ConfirmHotkey.dll`.
+```
+msbuild ConfirmHotkey.sln /p:Configuration="Client Release" /p:Platform=x64 ^
+  /p:GameSDKRoot="C:\path\to\StarRupture-Game-SDK" ^
+  /p:PluginSDKInclude="C:\path\to\StarRupture-Plugin-SDK\include"
+```
 
-The `Debug`/`Release` (generic) and `Server Debug`/`Server Release` configurations exist so the solution stays buildable in those modes, but this plugin does nothing useful outside `Client *`.
+Output: `build\Client Release\Plugins\ConfirmHotkey.dll`.
+
+Only `Client Debug` and `Client Release` configurations exist — the plugin is client-only by design (`plugin.cpp` rejects non-client host binaries at init time).
 
 ## Files
 
