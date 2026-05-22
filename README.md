@@ -25,7 +25,7 @@ Both widgets inherit from the game's generic confirm-action base class `SDK::UCr
 3. Launch the game once — `Plugins\config\ConfirmHotkey.ini` is generated with defaults.
 4. Edit the INI if you want a different key.
 
-> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** (the `dwmapi.dll` proxy loader) to be installed first.
+> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface ≥ v30 (for combo-key support and auto re-register on rebind). If your ModLoader is older, install [v0.3.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v0.3.0) instead — the auto-update manifest still points there for older loaders.
 
 ## Config (`Plugins\config\ConfirmHotkey.ini`)
 
@@ -37,17 +37,27 @@ Enabled=true
 ConfirmHotkey=E
 ```
 
-Hotkey names resolve through the ModLoader's `IPluginInputEvents::RegisterKeybindByName` — any key string the loader recognizes (`R`, `F`, function keys, etc.) should work.
+The hotkey is registered through the ModLoader's `IPluginInputEvents::RegisterKeybindByName`, which accepts plain key names and combo strings:
+
+| Value | Effect |
+|---|---|
+| `E` | Bare key |
+| `F5` | Function key |
+| `Ctrl+E` | Modifier combo |
+| `Shift+F5` | Modifier combo |
+| `Ctrl+Shift+Delete` | Multi-modifier combo |
+
+Modifier tokens (`Ctrl` / `Shift` / `Alt`) are case-insensitive. The plugin's schema declares this entry as `ConfigValueType::Keybind`, so the in-game plugin config menu renders a keybind-picker — you can rebind without editing the INI, and the change takes effect immediately (the ModLoader auto re-registers the binding).
 
 > **Upgrading from an older build?** The config key was renamed from `RecycleHotkey` to `ConfirmHotkey`. `InitializeFromSchema` will add the new key automatically on first launch after upgrade; the old `RecycleHotkey=...` line remains in the INI as an inert dangling entry (nothing reads it). Delete it if you want a clean file.
 
 ## How it works
 
 1. `PluginInit` stores `IPluginSelf*`, inits config, verifies client binary.
-2. `ModCore::Initialize` registers the configured hotkey via `Input->RegisterKeybindByName(..., EModKeyEvent::Pressed, ...)` and subscribes to `UI->RegisterOnConfigChanged(...)` so the key can be rebound from the in-game config menu without a plugin reload.
+2. `ModCore::Initialize` registers the configured hotkey via `Input->RegisterKeybindByName(..., EModKeyEvent::Pressed, ...)`. The ModLoader (interface v30+) tracks the registration and automatically re-registers the keybind when the user rebinds it in the in-game config UI — no manual config-change subscription needed.
 3. On keypress, the callback walks `UObject::GObjects` in a single pass, filtering to non-CDO objects whose class `IsA SDK::UCrUW_Analyzer`. The first one whose `UWidget::IsVisible()` returns true wins — `ClaimButton->ButtonClicked()` fires for the sound and animation, then `HandleClaimClicked()` fires for the gameplay effect. Both paths are SEH-wrapped so a mid-teardown widget can't take the game down.
 4. The success log captures the widget's actual Blueprint class name (`WBP_Recycler_C`, `WBP_Analyzer_C`, …) so you can tell from the log which building fired.
-5. `PluginShutdown` unregisters the keybind and the config-change subscription, and clears `IPluginSelf`.
+5. `PluginShutdown` unregisters the keybind and clears `IPluginSelf`.
 
 No low-level hooks, no pattern scanning — pure typed-hook consumer.
 

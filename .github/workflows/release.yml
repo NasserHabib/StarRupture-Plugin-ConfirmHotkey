@@ -209,6 +209,13 @@ jobs:
           Write-Host "Uploading $($assets.Count) asset(s):"
           $assets | ForEach-Object { Write-Host "  $_" }
 
+          # v0.4.0 onward targets modloader interface v30+ (Keybind config type
+          # + combo strings + auto re-register). Mark as prerelease so GitHub's
+          # /releases/latest/ resolver — which the install ZIP's sidecar points
+          # at — keeps serving v0.3.0's manifest for users on older modloaders.
+          # Flip back to a normal release once v0.3.0 is no longer the support
+          # floor.
           gh release create $tag @assets `
             --title "ConfirmHotkey Plugin $tag" `
-            --generate-notes
+            --generate-notes `
+            --prerelease

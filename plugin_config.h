@@ -16,9 +16,9 @@ namespace ConfirmHotkeyConfig
 		{
 			"PluginSettings",
 			"ConfirmHotkey",
-			ConfigValueType::String,
+			ConfigValueType::Keybind,
 			"E",
-			"The hotkey used to confirm the primary action in single-button interior UIs (Recycler, Analyzing Station). E.g., E, F, etc."
+			"The hotkey used to confirm the primary action in single-button interior UIs (Recycler, Analyzing Station). Plain keys (E, F, F5) and combos (Ctrl+E, Shift+F5, Ctrl+Shift+Delete) are supported."
 		}
 	};
 
