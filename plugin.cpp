@@ -19,7 +19,8 @@ static PluginInfo s_pluginInfo = {
 	MODLOADER_BUILD_TAG,
 	"S4cobra",
 	"Adds a hotkey that confirms the primary action in single-button interior UIs (Recycler, Analyzing Station).",
-	PLUGIN_INTERFACE_VERSION
+	PLUGIN_INTERFACE_VERSION,
+	PLUGIN_TARGET_CLIENT   // v33 — required; loader rejects target mismatches
 };
 
 static bool IsClientBinary()

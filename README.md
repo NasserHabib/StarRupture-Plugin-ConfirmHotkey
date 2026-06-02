@@ -25,7 +25,7 @@ Both widgets inherit from the game's generic confirm-action base class `SDK::UCr
 3. Launch the game once — `Plugins\config\ConfirmHotkey.ini` is generated with defaults.
 4. Edit the INI if you want a different key.
 
-> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface ≥ v30 (for combo-key support and auto re-register on rebind). If your ModLoader is older, install [v0.3.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v0.3.0) instead — the auto-update manifest still points there for older loaders.
+> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface **v33** (game build 120148 / SR patch with modloader `v1.12.4`+). The interface floor was raised to 33 (the `pluginTarget` field became mandatory), so older modloaders will refuse this build. If you're still on the previous modloader generation (interface 26–31), install [v0.4.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v0.4.0) instead.
 
 ## Config (`Plugins\config\ConfirmHotkey.ini`)
 
