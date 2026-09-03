@@ -25,7 +25,7 @@ Both widgets inherit from the game's generic confirm-action base class `SDK::UCr
 3. Launch the game once — `Plugins\config\ConfirmHotkey.ini` is generated with defaults.
 4. Edit the INI if you want a different key.
 
-> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface **v60** (game build 121391 / modloader `v1.17.3`+). The interface floor was raised 46 → 60 (modloader-only updates; no new game build), so older modloaders will refuse this build. If you're on the previous modloader generation (interface 46), install [v0.8.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v0.8.0) instead.
+> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface **v62** (StarRupture **Update 2**, game build CL 125218 / modloader `v1.18.1`+). v62 removed `IPluginSelf::scanner`, so every plugin had to be rebuilt and older modloaders will refuse this build. If you're still on the pre-Update-2 modloader (interface 60), install [v0.9.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v0.9.0) instead.
 
 ## Config (`Plugins\config\ConfirmHotkey.ini`)
 
@@ -94,7 +94,7 @@ Only `Client Debug` and `Client Release` configurations exist — the plugin is 
 - `plugin.{h,cpp}` — the three ABI exports + `IPluginSelf` lifecycle + client-binary guard.
 - `ModCore.{h,cpp}` — hotkey registration, GObjects scan, per-target invocation.
 - `plugin_config.h` — INI schema + typed accessors (`ConfirmHotkeyConfig::Config`).
-- `plugin_helpers.h` — `LOG_*` macros and `GetHooks/GetConfig/GetScanner` wrappers.
+- `plugin_helpers.h` — `LOG_*` macros and `GetHooks/GetConfig` wrappers.
 - `dllmain.cpp` — stock Windows DLL entry.
 
 ## Disclaimer

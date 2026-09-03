@@ -8,7 +8,8 @@ IPluginSelf* GetSelf();
 // Convenience wrappers used by implementation files
 inline IPluginHooks*   GetHooks()   { auto* s = GetSelf(); return s ? s->hooks   : nullptr; }
 inline IPluginConfig*  GetConfig()  { auto* s = GetSelf(); return s ? s->config  : nullptr; }
-inline IPluginScanner* GetScanner() { auto* s = GetSelf(); return s ? s->scanner : nullptr; }
+// GetScanner removed: interface v62 dropped IPluginSelf::scanner (pattern scanning now
+// only via the optional OnPluginLoadHooks export, which this plugin does not need).
 
 // Convenience macros for logging
 #define LOG_TRACE(format, ...) if (auto s = GetSelf()) s->logger->Trace(s, format, ##__VA_ARGS__)
