@@ -111,10 +111,28 @@ void ModCore::Shutdown()
     s_keyName[0] = '\0';
 }
 
+// ponytail: the loader fires a bare-name bind ("E") under ANY held modifier and
+// still passes the key to the game, so bare E also fires on the game's native
+// Shift+E. Suppress when a modifier is held but the user did not ask for one.
+// Read the key from config at press time: F2 rebinds rewrite config and
+// re-register without notifying us, so s_keyName can be stale. Ceiling:
+// bare-key users lose Ctrl/Alt/Shift+<key> as triggers -- configure the combo
+// if you want one. Delete if the loader ever grows a strict-modifier option.
+static bool ModifierHeldButNotConfigured()
+{
+    std::string k = ConfirmHotkeyConfig::Config::GetConfirmHotkey();
+    for (char& c : k) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    const bool wantsMod = k.find("CTRL")  != std::string::npos || k.find("CONTROL") != std::string::npos
+                       || k.find("SHIFT") != std::string::npos || k.find("ALT")     != std::string::npos;
+    if (wantsMod) return false;
+    return ((GetAsyncKeyState(VK_CONTROL) | GetAsyncKeyState(VK_SHIFT) | GetAsyncKeyState(VK_MENU)) & 0x8000) != 0;
+}
+
 void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
 {
     if (event != EModKeyEvent::Pressed) return;
     if (!SDK::UObject::GObjects) return;   // early-press guard: pre-engine-init keypress
+    if (ModifierHeldButNotConfigured()) return;   // bare key + modifier held: let the game have it
 
     // Count non-CDO UCrUW_Analyzer-derived instances regardless of visibility.
     // Lets us distinguish "class never instanced" from "instanced but filtered

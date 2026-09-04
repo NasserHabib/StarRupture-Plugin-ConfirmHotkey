@@ -25,7 +25,7 @@ Both widgets inherit from the game's generic confirm-action base class `SDK::UCr
 3. Launch the game once — `Plugins\config\ConfirmHotkey.ini` is generated with defaults.
 4. Edit the INI if you want a different key.
 
-> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface **v62** (StarRupture **Update 2**, game build CL 125218 / modloader `v1.18.1`+). v62 removed `IPluginSelf::scanner`, so every plugin had to be rebuilt and older modloaders will refuse this build. If you're still on the pre-Update-2 modloader (interface 60), install [v0.9.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v0.9.0) instead.
+> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface **v63** (StarRupture **Update 2 hotpatch**, game build CL 125368 / modloader `v1.19.0`+). The hotpatch moved game addresses and the interface floor was raised to 63, so older modloaders will refuse this build. If you are still on the pre-hotpatch game (CL 125218) with ModLoader v1.18.x, install [v2.0.1](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v2.0.1) instead.
 
 ## Config (`Plugins\config\ConfirmHotkey.ini`)
 
@@ -47,7 +47,7 @@ The hotkey is registered through the ModLoader's `IPluginInputEvents::RegisterKe
 | `Shift+F5` | Modifier combo |
 | `Ctrl+Shift+Delete` | Multi-modifier combo |
 
-Modifier tokens (`Ctrl` / `Shift` / `Alt`) are case-insensitive. The plugin's schema declares this entry as `ConfigValueType::Keybind`, so the in-game plugin config menu renders a keybind-picker — you can rebind without editing the INI, and the change takes effect immediately (the ModLoader auto re-registers the binding).
+Modifier tokens (`Ctrl` / `Shift` / `Alt`) are case-insensitive. A bare key (e.g. `E`) fires only when **no** modifier is held, so it will not double-fire on the game's own `Shift+E`; if you want a combo, configure the combo. The plugin's schema declares this entry as `ConfigValueType::Keybind`, so the in-game plugin config menu renders a keybind-picker — you can rebind without editing the INI, and the change takes effect immediately (the ModLoader auto re-registers the binding).
 
 > **Upgrading from an older build?** The config key was renamed from `RecycleHotkey` to `ConfirmHotkey`. `InitializeFromSchema` will add the new key automatically on first launch after upgrade; the old `RecycleHotkey=...` line remains in the INI as an inert dangling entry (nothing reads it). Delete it if you want a clean file.
 
