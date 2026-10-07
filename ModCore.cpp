@@ -78,15 +78,11 @@ bool ModCore::Initialize(IPluginSelf* self)
     const char* keyName = ConfirmHotkeyConfig::Config::GetConfirmHotkey();
     strncpy_s(s_keyName, sizeof(s_keyName), keyName, _TRUNCATE);
 
-    // Defensive uppercase pass for hand-edited INIs. The in-game keybind
-    // picker (ConfigValueType::Keybind) writes canonical strings, and the
-    // loader's combo parser is case-insensitive for modifier tokens
-    // (Ctrl/Shift/Alt) — but the base-key matcher's case sensitivity is
-    // not contractually documented, so we normalize letters/digits to be
-    // safe. Harmless for combos: "Shift+ALT+e" -> "SHIFT+ALT+E" still
-    // resolves correctly.
-    for (char* p = s_keyName; *p; ++p)
-        *p = static_cast<char>(std::toupper(static_cast<unsigned char>(*p)));
+    // Register the key exactly as the config stores it. The loader parses key
+    // names without regard to case, so no normalization is needed. Its live
+    // rebind (F2 config UI) finds this registration with an exact string
+    // compare against the config value, so changing the case here makes a
+    // rebind silently do nothing until the game restarts.
 
     LOG_INFO("ModCore: Registering confirm hotkey '%s' (Pressed)", s_keyName);
     self->hooks->Input->RegisterKeybindByName(s_keyName, EModKeyEvent::Pressed, &OnConfirmHotkey);
@@ -171,12 +167,18 @@ void ModCore::OnConfirmHotkey(EModKey /*key*/, EModKeyEvent event)
             return;
         }
 
+        // Braces are required here: the LOG_* macros expand to an `if`, so an
+        // unbraced `else` binds to the macro and the crash is never logged.
         if (SafeInvokeClaim(ui))
+        {
             LOG_INFO("ModCore: Confirmed action on %s via hotkey '%s'",
                      className.c_str(), s_keyName);
+        }
         else
+        {
             LOG_ERROR("ModCore: ClaimButton click crashed on %s (widget %p)",
                       className.c_str(), static_cast<void*>(ui));
+        }
         return;
     }
 

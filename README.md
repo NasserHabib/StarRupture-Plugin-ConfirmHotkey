@@ -21,13 +21,15 @@ Both widgets inherit from the game's generic confirm-action base class `SDK::UCr
 ## Installation
 
 1. Build `Client Release|x64` (see below) or grab the built DLL.
-2. Copy `ConfirmHotkey.dll` to `<game_dir>\Binaries\Win64\Plugins\` next to `dwmapi.dll`.
-3. Launch the game once — `Plugins\config\ConfirmHotkey.ini` is generated with defaults.
+2. Copy `ConfirmHotkey.dll` to `<game_dir>\Binaries\Win64\ModLoader\Plugins\`. If you use the release ZIP, extract it into `<game_dir>\Binaries\Win64\ModLoader\` instead — it contains a `Plugins\` folder with `ConfirmHotkey.dll` and `ConfirmHotkey.json`; the `.json` lets the ModLoader auto-update the plugin.
+3. Launch the game once — `ModLoader\Plugins\config\ConfirmHotkey.ini` is generated with defaults.
 4. Edit the INI if you want a different key.
 
-> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface **v66** (StarRupture **Update 2 hotfix 2.5**, game build CL 126119 / modloader `v1.21.0`+). The hotfix moved game addresses and the interface floor was raised to 66, so older modloaders will refuse this build. If you are still on game build CL 125897 with ModLoader v1.20.x, install [v2.2.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v2.2.0) instead.
+> **Requires [StarRupture-ModLoader](https://github.com/AlienXAXS/StarRupture-ModLoader)** with plugin interface **v70** (StarRupture **Hotfix 0.3.5**, game build CL 127004 / modloader `v1.22.0`+). The hotfix moved game addresses and the interface floor was raised to 70, so older modloaders will refuse this build. If you are still on game build CL 126119, install [v2.3.0](https://github.com/NasserHabib/StarRupture-Plugin-ConfirmHotkey/releases/tag/v2.3.0) instead; it needs ModLoader v1.21.2 or newer.
 
-## Config (`Plugins\config\ConfirmHotkey.ini`)
+> **Upgrading by hand?** Older ModLoader versions used `Binaries\Win64\Plugins\`. The ModLoader still moves files from that folder into `ModLoader\Plugins\` when the game starts, but it does not replace a file that is already there. Put the new DLL directly in `ModLoader\Plugins\`.
+
+## Config (`ModLoader\Plugins\config\ConfirmHotkey.ini`)
 
 ```ini
 [General]
